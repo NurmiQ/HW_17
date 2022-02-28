@@ -12,6 +12,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
+api = Api(app)
+movie_ns = api.namespace('movies')
 
 class Movie(db.Model):
     __tablename__ = 'movie'
@@ -36,6 +38,25 @@ class Genre(db.Model):
     __tablename__ = 'genre'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255))
+
+
+class MovieSchema(Schema):
+    id = fields.Int()
+    title = fields.Str()
+    description = fields.Str()
+    trailer = fields.Str()
+    year = fields.Int()
+    rating = fields.Int()
+    genre_id = fields.Str()
+    genre = fields.Str()
+    director_id = fields.Str()
+    director = fields.Str()
+
+
+movie_schema = MovieSchema()
+movies_schema = MovieSchema(many=True)
+
+
 
 db.drop_all()
 db.create_all()
@@ -273,3 +294,7 @@ for genre in data["genres"]:
     )
     with db.session.begin():
         db.session.add(d)
+
+
+
+
