@@ -11,6 +11,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 api = Api(app)
 movie_ns = api.namespace('movies')
+director_ns = api.namespace('directors')
+genre_ns = api.namespace('genres')
+
 
 class Movie(db.Model):
     __tablename__ = 'movie'
@@ -24,6 +27,7 @@ class Movie(db.Model):
     genre = db.relationship("Genre")
     director_id = db.Column(db.Integer, db.ForeignKey("director.id"))
     director = db.relationship("Director")
+
 
 class Director(db.Model):
     __tablename__ = 'director'
@@ -57,8 +61,21 @@ movies_schema = MovieSchema(many=True)
 @movie_ns.route('/')
 class MovieView(Resource):
     def get(self):
-        all_movies = Movie.query.all()
-        return movies_schema.dump(all_movies), 200
+        director_id = request.args.get("director_id")
+        genre_id = request.args.get("genre_id")
+        if director_id and genre_id:
+            movies = Movie.query.filter_by(director_id=director_id, genre_id=genre_id).all()
+        elif director_id:
+            movies = Movie.query.filter_by(director_id=director_id).all()
+        elif genre_id:
+            movies = Movie.query.filter_by(genre_id=genre_id).all()
+        else:
+            movies = Movie.query.all()
+        if movies:
+            return movies_schema.dump(movies), 200
+        else:
+            return "", 404
+
 
 @movie_ns.route('/<int:uid>')
 class MovieView(Resource):
@@ -66,8 +83,77 @@ class MovieView(Resource):
         try:
             movie = Movie.query.get(uid)
             return movie_schema.dump(movie), 200
-        except Exception as e:
+        except Exception:
             return "", 404
+
+
+class DirectorSchema(Schema):
+    id = fields.Int()
+    name = fields.Str()
+
+
+director_schema = DirectorSchema()
+directors_schema = DirectorSchema(many=True)
+
+
+@director_ns.route('/<int:uid>')
+class DirectorView(Resource):
+    def post(self):
+        req_json = request.json
+        new_director = Director(**req_json)
+
+        with db.session.begin():
+            db.session.add(new_director)
+        return "", 201
+
+    def put(self, uid):
+        director = Director.query.get(uid)
+        req_json = request.json
+        director.name = req_json.get("name")
+        db.session.add(director)
+        db.session.commit()
+        return "", 204
+
+    def delete(self, uid):
+        director = Director.query.get(uid)
+        db.session.delete(director)
+        db.session.commit()
+        return "", 204
+
+
+class GenreSchema(Schema):
+    id = fields.Int()
+    name = fields.Str()
+
+
+genre_schema = GenreSchema()
+genres_schema = GenreSchema(many=True)
+
+
+@genre_ns.route('/<int:uid>')
+class GenreView(Resource):
+    def post(self):
+        req_json = request.json
+        new_genre = Genre(**req_json)
+
+        with db.session.begin():
+            db.session.add(new_genre)
+        return "", 201
+
+    def put(self, uid):
+        genre = Genre.query.get(uid)
+        req_json = request.json
+        genre.name = req_json.get("name")
+        db.session.add(genre)
+        db.session.commit()
+        return "", 204
+
+    def delete(self, uid):
+        genre = Genre.query.get(uid)
+        db.session.delete(genre)
+        db.session.commit()
+        return "", 204
+
 
 if __name__ == '__main__':
     app.run(debug=True)

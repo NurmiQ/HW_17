@@ -40,24 +40,6 @@ class Genre(db.Model):
     name = db.Column(db.String(255))
 
 
-class MovieSchema(Schema):
-    id = fields.Int()
-    title = fields.Str()
-    description = fields.Str()
-    trailer = fields.Str()
-    year = fields.Int()
-    rating = fields.Int()
-    genre_id = fields.Str()
-    genre = fields.Str()
-    director_id = fields.Str()
-    director = fields.Str()
-
-
-movie_schema = MovieSchema()
-movies_schema = MovieSchema(many=True)
-
-
-
 db.drop_all()
 db.create_all()
 
